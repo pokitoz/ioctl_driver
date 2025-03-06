@@ -17,10 +17,10 @@ lsmod | grep "$DEVICE_NAME" &> /dev/null &&
 echo "Loading module $DEVICE_NAME"
 # invoke insmod and use a pathname, as insmod doesn't look in . by default
 /sbin/insmod "${PATH_TO_MODULE}" || exit 1
-echo -e "Use lsmod to see modules loaded:\n  $(lsmod | grep ${DEVICE_NAME})"
+echo "Use lsmod to see modules loaded:\n  $(lsmod | grep ${DEVICE_NAME})"
 
 # Retrieve major number
-MODULE_ID=($(cat /proc/devices | grep "$DEVICE_NAME"))
-echo "Create node with ID ${MODULE_ID[0]}"
-mknod /dev/${DEVICE_NAME} c ${MODULE_ID[0]} 0
+MODULE_ID=$(cat /proc/devices | grep "$DEVICE_NAME" | cut -d' ' -f1)
+echo "Create node with ID ${MODULE_ID}"
+mknod /dev/${DEVICE_NAME} c ${MODULE_ID} 0
 chmod 666 /dev/${DEVICE_NAME}
