@@ -1,22 +1,19 @@
-#!/bin/bash
+#!/bin/bash -e
 
-device_name=ioctl
-mode="444"
+DEVICE_NAME=ioctl
 
-echo "Loading module $device_name"
+lsmod | grep "$DEVICE_NAME" &> /dev/null &&
+    /sbin/rmmod ${DEVICE_NAME} &&
+    rm -f /dev/${DEVICE_NAME} &&
+    echo "Module removed"
+
+echo "Loading module $DEVICE_NAME"
 # invoke insmod and use a pathname, as insmod doesn't look in . by default
-/sbin/insmod "./dev/$device_name.ko" || exit 1
+/sbin/insmod "./dev/$DEVICE_NAME.ko" || exit 1
+echo -e "Use lsmod to see modules loaded:\n  $(lsmod | grep ${DEVICE_NAME})"
 
-echo "Use lsmod to see all devices loaded"
-
-# retrieve major number
-major=$(cat /proc/devices | grep "$device_name")
-major_number=($major)
-echo "Removing stale nodes"
-rm -f /dev/${device_name}
-echo "Replacing the old nodes"
-mknod /dev/${device_name} c ${major_number[0]} 0
-major=$(cat /proc/devices | grep "$device_name")
-
-echo "To remove a device, do \"/sbin/rmmod $device_name \" and \"rm -f /dev/${module}\""
-
+# Retrieve major number
+MODULE_ID=($(cat /proc/devices | grep "$DEVICE_NAME"))
+echo "Create node with ID ${MODULE_ID[0]}"
+mknod /dev/${DEVICE_NAME} c ${MODULE_ID[0]} 0
+chmod 666 /dev/${DEVICE_NAME}

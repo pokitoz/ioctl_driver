@@ -1,10 +1,13 @@
-CC=$(CROSS_COMPILE)gcc
-CFLAGS=-Wall -std=c99 -O0 -g -Wconversion -Wextra
+CC = $(CROSS_COMPILE)gcc
+CFLAGS = -Wall -g -Wconversion -Wextra
+TARGET = ioctl_app
 
-all: clean ioctl_app
-
-ioctl_app: ioctl_app.o
-	$(CC) -o $@ $^ $(CFLAGS)
+all: clean $(TARGET)
 
 clean:
-	rm -rf *.o ioctl_app
+	rm -rf *.o $(TARGET)
+
+$(TARGET): $(TARGET).o
+	$(CC) -o $@ $^ $(CFLAGS)
+
+.PHONY: all clean

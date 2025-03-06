@@ -20,11 +20,10 @@
 #include "ioctl.h"
 
 /* store the major number extracted by dev_t */
-int ioctl_d_interface_major = 0;
-int ioctl_d_interface_minor = 0;
+static int ioctl_d_interface_major = 0;
+static int ioctl_d_interface_minor = 0;
 
-#define DEVICE_NAME "ioctl_d"
-char* ioctl_d_interface_name = DEVICE_NAME;
+const char* ioctl_d_interface_name = "ioctl_d";
 
 ioctl_d_interface_dev ioctl_d_interface;
 
@@ -38,23 +37,9 @@ struct file_operations ioctl_d_interface_fops = {
 };
 
 /* Private API */
-static int ioctl_d_interface_dev_init(ioctl_d_interface_dev* ioctl_d_interface);
-static void ioctl_d_interface_dev_del(ioctl_d_interface_dev* ioctl_d_interface);
 static int ioctl_d_interface_setup_cdev(ioctl_d_interface_dev* ioctl_d_interface);
 static int ioctl_d_interface_init(void);
 static void ioctl_d_interface_exit(void);
-
-static int ioctl_d_interface_dev_init(ioctl_d_interface_dev * ioctl_d_interface)
-{
-  int result = 0;
-  memset(ioctl_d_interface, 0, sizeof(ioctl_d_interface_dev));
-  atomic_set(&ioctl_d_interface->available, 1);
-  sema_init(&ioctl_d_interface->sem, 1);
-
-  return result;
-}
-
-static void ioctl_d_interface_dev_del(ioctl_d_interface_dev * ioctl_d_interface) {}
 
 static int ioctl_d_interface_setup_cdev(ioctl_d_interface_dev * ioctl_d_interface)
 {
@@ -71,11 +56,12 @@ static int ioctl_d_interface_setup_cdev(ioctl_d_interface_dev * ioctl_d_interfac
 
 static int ioctl_d_interface_init(void)
 {
-  dev_t           devno = 0;
-  int             result = 0;
+  dev_t devno = 0;
+  int result = 0;
 
-  ioctl_d_interface_dev_init(&ioctl_d_interface);
-
+  memset(&ioctl_d_interface, 0, sizeof(ioctl_d_interface_dev));
+  atomic_set(&(ioctl_d_interface.available), 1);
+  sema_init(&(ioctl_d_interface.sem), 1);
 
   /* register char device
    * we will get the major number dynamically this is recommended see
@@ -88,7 +74,12 @@ static int ioctl_d_interface_init(void)
     goto fail;
   }
 
-  result = ioctl_d_interface_setup_cdev(&ioctl_d_interface);
+
+  devno = MKDEV(ioctl_d_interface_major, ioctl_d_interface_minor);
+  cdev_init(&(ioctl_d_interface.cdev), &ioctl_d_interface_fops);
+  ioctl_d_interface.cdev.owner = THIS_MODULE;
+  ioctl_d_interface.cdev.ops = &ioctl_d_interface_fops;
+  result = cdev_add(&ioctl_d_interface.cdev, devno, 1);
   if (result < 0) {
     printk(KERN_WARNING "ioctl_d_interface: error %d adding ioctl_d_interface", result);
     goto fail;
@@ -108,7 +99,6 @@ static void ioctl_d_interface_exit(void)
 
   cdev_del(&ioctl_d_interface.cdev);
   unregister_chrdev_region(devno, 1);
-  ioctl_d_interface_dev_del(&ioctl_d_interface);
 
   printk(KERN_INFO "ioctl_d_interface: module unloaded\n");
 }
@@ -142,7 +132,7 @@ long ioctl_d_interface_ioctl(struct file *filp, unsigned int cmd, unsigned long 
   switch (cmd) {
     // Get the number of channel found
     case IOCTL_BASE_GET_MUIR:
-      printk(KERN_INFO "<%s> ioctl: IOCTL_BASE_GET_MUIR\n", DEVICE_NAME);
+      printk(KERN_INFO "<%s> ioctl: IOCTL_BASE_GET_MUIR\n", ioctl_d_interface_name);
       uint32_t value = 0x12345678;
       if (copy_to_user((uint32_t*) arg, &value, sizeof(value))){
         return -EFAULT;
@@ -156,12 +146,11 @@ long ioctl_d_interface_ioctl(struct file *filp, unsigned int cmd, unsigned long 
   return 0;
 }
 
-
 module_init(ioctl_d_interface_init);
 module_exit(ioctl_d_interface_exit);
 
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("Florian Depraz <florian.depraz@outlook.com>");
 MODULE_DESCRIPTION("IOCTL Interface driver");
-MODULE_VERSION("0.1");
+MODULE_VERSION("0.2");
 

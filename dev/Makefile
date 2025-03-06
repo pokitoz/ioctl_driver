@@ -11,14 +11,10 @@ else
 
   ifeq ($(KDIR),)
 
-    DEFAULT_KDIR := /lib/modules/$(shell uname -r)/build
+    KDIR := /lib/modules/$(shell uname -r)/build
+    $(warning KDIR is not set. Using $(KDIR))
 
-    ERR_TEXT := export KDIR=<linux_src_dir> is empty. Using /lib/modules/$(shell uname -r)/build
-    $(warning $(ERR_TEXT))
-
-    KDIR := $(DEFAULT_KDIR)
-
-  endif # if KDIR not found
+  endif # if KDIR is not set
 
   all:
 	$(MAKE) clean
