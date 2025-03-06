@@ -1,4 +1,6 @@
 MODULE = ioctl
+CROSS_COMPILE ?=
+ARCH ?= x86_64
 
 ifneq ($(KERNELRELEASE),)
 
@@ -18,7 +20,7 @@ else
 
   all:
 	$(MAKE) clean
-	$(MAKE) -C $(KDIR) M=$$PWD
+	$(MAKE) ARCH=$(ARCH) CROSS_COMPILE=$(CROSS_COMPILE) -C $(KDIR) M=$$PWD
 
   clean:
 	$(RM) -rf *.o *~ core .depend .*.cmd *.ko *.mod.c *.mod \

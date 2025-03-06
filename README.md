@@ -1,10 +1,11 @@
 # IOCTL Linux Driver
 
-Simple example on how to create a IOCTL driver for Linux.
-This can be used for simple testing purposes:
+Simple example on how to create a IOCTL driver for Linux thanks
+to [LDD3](https://lwn.net/Kernel/LDD3/). This can be used for simple
+testing purposes:
 
-* Access to a special register from kernel mode to get the result in user mode.
-    For example Arm register from CP15 processor.
+* Access to a special register from kernel mode to get the result in
+  user mode. For example Arm register from CP15 processor.
 * Access to some memory mapped region
 * ...
 
@@ -31,8 +32,12 @@ This repo contains the folders below:
 
 - `load_module.sh`: Load the module
 
-    * Load the driver _ioctl_. This probably needs sudo permissions!
+    * Unload and load the module. This probably needs sudo permissions!
 
+
+## Run
+
+Use `make`, it will build the .ko module, the application and load the module.
 
 ## Debug
 
