@@ -4,15 +4,17 @@
 #include <linux/fs.h>
 #include <linux/kernel.h>
 #include <linux/module.h>
-#include <linux/semaphore.h>
 #include <linux/slab.h>
 #include <linux/types.h>
-#include <asm/atomic.h>
-#include <asm/io.h>
-#include <asm/uaccess.h>
-#include <linux/delay.h>
-#include <linux/cdev.h>	
 #include <linux/uaccess.h>
+#include <linux/ioctl.h>
+#include <linux/moduleparam.h>
+#include <linux/version.h>
+#include <linux/device.h>
+#include <linux/errno.h>
+#include <linux/sched.h>
+#include <linux/atomic.h>
+#include <linux/sem.h>
 
 #include "ioctl_dev.h"
 #include "ioctl.h"
