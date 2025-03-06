@@ -1,6 +1,13 @@
-#!/bin/bash -e
+#!/bin/sh -e
 
 DEVICE_NAME=ioctl
+PATH_TO_MODULE="./dev/$DEVICE_NAME.ko"
+
+if [ ! -z $1 ]; then
+    PATH_TO_MODULE=$1
+fi
+
+echo "Loading module at $PATH_TO_MODULE"
 
 lsmod | grep "$DEVICE_NAME" &> /dev/null &&
     /sbin/rmmod ${DEVICE_NAME} &&
@@ -9,7 +16,7 @@ lsmod | grep "$DEVICE_NAME" &> /dev/null &&
 
 echo "Loading module $DEVICE_NAME"
 # invoke insmod and use a pathname, as insmod doesn't look in . by default
-/sbin/insmod "./dev/$DEVICE_NAME.ko" || exit 1
+/sbin/insmod "${PATH_TO_MODULE}" || exit 1
 echo -e "Use lsmod to see modules loaded:\n  $(lsmod | grep ${DEVICE_NAME})"
 
 # Retrieve major number
