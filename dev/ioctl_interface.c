@@ -13,8 +13,6 @@
 #include <linux/device.h>
 #include <linux/errno.h>
 #include <linux/sched.h>
-#include <linux/atomic.h>
-#include <linux/sem.h>
 
 #include "ioctl_dev.h"
 #include "ioctl.h"
@@ -22,36 +20,27 @@
 /* store the major number extracted by dev_t */
 static int ioctl_d_interface_major = 0;
 static int ioctl_d_interface_minor = 0;
+static ioctl_d_interface_dev ioctl_d_interface;
 
-const char* ioctl_d_interface_name = "ioctl_d";
+const char* C_IOCTL_DRIVER_NAME = "ioctl_d";
 
-ioctl_d_interface_dev ioctl_d_interface;
-
-struct file_operations ioctl_d_interface_fops = {
+struct file_operations ioctl_d_fops = {
   .owner = THIS_MODULE,
   .read = NULL,
   .write = NULL,
   .open = ioctl_d_interface_open,
   .unlocked_ioctl = ioctl_d_interface_ioctl,
-  .release = ioctl_d_interface_release
+  .release = NULL
 };
 
-/* Private API */
-static int ioctl_d_interface_setup_cdev(ioctl_d_interface_dev* ioctl_d_interface);
-static int ioctl_d_interface_init(void);
-static void ioctl_d_interface_exit(void);
-
-static int ioctl_d_interface_setup_cdev(ioctl_d_interface_dev * ioctl_d_interface)
+static void ioctl_d_interface_exit(void)
 {
-  int error = 0;
-  dev_t devno = MKDEV(ioctl_d_interface_major, ioctl_d_interface_minor);
+  cdev_del(&ioctl_d_interface.cdev);
+  unregister_chrdev_region(
+    MKDEV(ioctl_d_interface_major, ioctl_d_interface_minor),
+    1);
 
-  cdev_init(&ioctl_d_interface->cdev, &ioctl_d_interface_fops);
-  ioctl_d_interface->cdev.owner = THIS_MODULE;
-  ioctl_d_interface->cdev.ops = &ioctl_d_interface_fops;
-  error = cdev_add(&ioctl_d_interface->cdev, devno, 1);
-
-  return error;
+  pr_info("ioctl_d_interface: module unloaded\n");
 }
 
 static int ioctl_d_interface_init(void)
@@ -60,32 +49,31 @@ static int ioctl_d_interface_init(void)
   int result = 0;
 
   memset(&ioctl_d_interface, 0, sizeof(ioctl_d_interface_dev));
-  atomic_set(&(ioctl_d_interface.available), 1);
-  sema_init(&(ioctl_d_interface.sem), 1);
 
-  /* register char device
-   * we will get the major number dynamically this is recommended see
-   * book : ldd3
-   */
-  result = alloc_chrdev_region(&devno, ioctl_d_interface_minor, 1, ioctl_d_interface_name);
-  ioctl_d_interface_major = MAJOR(devno);
+  // register char device by getting major number dynamically (in devno)
+  // see ldd3
+  result = alloc_chrdev_region(&devno, ioctl_d_interface_minor, 1,
+                               C_IOCTL_DRIVER_NAME);
   if (result < 0) {
-    printk(KERN_WARNING "ioctl_d_interface: can't get major number %d\n", ioctl_d_interface_major);
+    pr_warn("ioctl_d_interface: on major number %d\n",
+            ioctl_d_interface_major);
     goto fail;
   }
 
+  ioctl_d_interface_major = MAJOR(devno);
+  ioctl_d_interface_minor = MINOR(devno);
 
-  devno = MKDEV(ioctl_d_interface_major, ioctl_d_interface_minor);
-  cdev_init(&(ioctl_d_interface.cdev), &ioctl_d_interface_fops);
+  // Init cdev and add it to the system
+  cdev_init(&(ioctl_d_interface.cdev), &ioctl_d_fops);
   ioctl_d_interface.cdev.owner = THIS_MODULE;
-  ioctl_d_interface.cdev.ops = &ioctl_d_interface_fops;
+  ioctl_d_interface.cdev.ops = &ioctl_d_fops;
   result = cdev_add(&ioctl_d_interface.cdev, devno, 1);
   if (result < 0) {
-    printk(KERN_WARNING "ioctl_d_interface: error %d adding ioctl_d_interface", result);
+    pr_warn( "ioctl_d_interface: error %d adding dev", result);
     goto fail;
   }
 
-  printk(KERN_INFO "ioctl_d_interface: module loaded\n");
+  pr_info("ioctl_d_interface: module loaded\n");
   return 0;
 
 fail:
@@ -93,48 +81,26 @@ fail:
   return result;
 }
 
-static void ioctl_d_interface_exit(void)
-{
-  dev_t devno = MKDEV(ioctl_d_interface_major, ioctl_d_interface_minor);
-
-  cdev_del(&ioctl_d_interface.cdev);
-  unregister_chrdev_region(devno, 1);
-
-  printk(KERN_INFO "ioctl_d_interface: module unloaded\n");
-}
-
 /* Public API */
-int ioctl_d_interface_open(struct inode *inode, struct file *filp)
+int ioctl_d_interface_open(struct inode* inode, struct file* filp)
 {
-  ioctl_d_interface_dev *ioctl_d_interface;
+  ioctl_d_interface_dev* ioctl_d_interface;
 
   ioctl_d_interface = container_of(inode->i_cdev, ioctl_d_interface_dev, cdev);
   filp->private_data = ioctl_d_interface;
-
-  if (!atomic_dec_and_test(&ioctl_d_interface->available)) {
-    atomic_inc(&ioctl_d_interface->available);
-    printk(KERN_ALERT "open ioctl_d_interface : the device has been opened by some other device, unable to open lock\n");
-    return -EBUSY;    /* already open */
-  }
-
   return 0;
 }
 
-int ioctl_d_interface_release(struct inode *inode, struct file *filp)
+long ioctl_d_interface_ioctl(struct file* filp,
+    unsigned int cmd, unsigned long arg)
 {
-  ioctl_d_interface_dev *ioctl_d_interface = filp->private_data;
-  atomic_inc(&ioctl_d_interface->available);  /* release the device */
-  return 0;
-}
+  pr_info("<%s>: %u\n", module_name(THIS_MODULE), cmd);
 
-long ioctl_d_interface_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
-{
   switch (cmd) {
-    // Get the number of channel found
-    case IOCTL_BASE_GET_MUIR:
-      printk(KERN_INFO "<%s> ioctl: IOCTL_BASE_GET_MUIR\n", ioctl_d_interface_name);
-      uint32_t value = 0x12345678;
-      if (copy_to_user((uint32_t*) arg, &value, sizeof(value))){
+
+    case IOCTL_GET_VAL:
+      const uint32_t value = 0x12345678;
+      if (copy_to_user((uint32_t*) arg, &value, sizeof(value))) {
         return -EFAULT;
       }
       break;
@@ -152,5 +118,4 @@ module_exit(ioctl_d_interface_exit);
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("Florian Depraz <florian.depraz@outlook.com>");
 MODULE_DESCRIPTION("IOCTL Interface driver");
-MODULE_VERSION("0.2");
-
+MODULE_VERSION("0.3");

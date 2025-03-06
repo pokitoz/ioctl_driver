@@ -5,7 +5,7 @@ ifneq ($(KERNELRELEASE),)
   # kbuild part of makefile
   obj-m  := $(MODULE).o
   $(MODULE)-y := ioctl_interface.o
-  ccflags-y := -g -Wall -Wno-unused-function -Wno-declaration-after-statement
+  ccflags-y := -g -Wall -Werror -Wextra
 
 else
 
@@ -21,7 +21,10 @@ else
 	$(MAKE) -C $(KDIR) M=$$PWD
 
   clean:
-	rm -f *.o *~ core .depend .*.cmd *.ko *.mod.c modules.order Module.symvers
-	rm -rf .tmp_versions
+	$(RM) -rf *.o *~ core .depend .*.cmd *.ko *.mod.c *.mod \
+			  modules.order Module.symvers
+	$(RM) -rf .tmp_*
+
+  .PHONY: all clean
 
 endif # if KERNELRELEASE
