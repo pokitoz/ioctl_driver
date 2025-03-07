@@ -2,12 +2,15 @@ MODULE = ioctl
 CROSS_COMPILE ?=
 ARCH ?= x86_64
 
+# KDIR is the kernel source directory
+#   for buildroot, it is buildroot/output/build/linux-xxxxxx
+
 ifneq ($(KERNELRELEASE),)
 
   # kbuild part of makefile
   obj-m  := $(MODULE).o
   $(MODULE)-y := ioctl_interface.o
-  ccflags-y := -g -Wall -Werror -Wextra
+  ccflags-y := -g -Wall -Wextra
 
 else
 

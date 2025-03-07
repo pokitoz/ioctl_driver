@@ -1,0 +1,18 @@
+#!/bin/sh
+
+case "$1" in
+  start)
+    echo "Loading module"
+    load_module.sh /bin/ioctl.ko
+    ;;
+  stop)
+    echo "Unloading module"
+    # Will not happen
+    ;;
+  *)
+    echo "Usage: {start|stop}"
+    exit 1
+    ;;
+esac
+
+exit 0
