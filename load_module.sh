@@ -1,26 +1,25 @@
 #!/bin/sh -e
+# Load module script. Will remove the old one if it exists
 
-DEVICE_NAME=ioctl
-PATH_TO_MODULE="./dev/$DEVICE_NAME.ko"
+MODULE_NAME=ioctl
+MODULE_PATH="./dev/$MODULE_NAME.ko"
 
-if [ ! -z $1 ]; then
-    PATH_TO_MODULE=$1
-fi
-
-echo "Loading module at $PATH_TO_MODULE"
-
-lsmod | grep "$DEVICE_NAME" &> /dev/null &&
-    /sbin/rmmod ${DEVICE_NAME} &&
-    rm -f /dev/${DEVICE_NAME} &&
+lsmod | grep "$MODULE_NAME" &> /dev/null &&
+    /sbin/rmmod ${MODULE_NAME} &&
+    rm -f /dev/${MODULE_NAME} &&
     echo "Module removed"
 
-echo "Loading module $DEVICE_NAME"
-# invoke insmod and use a pathname, as insmod doesn't look in . by default
-/sbin/insmod "${PATH_TO_MODULE}" || exit 1
-echo "Use lsmod to see modules loaded:\n  $(lsmod | grep ${DEVICE_NAME})"
+if [ ! -z $1 ]; then
+    MODULE_PATH=$1
+fi
 
-# Retrieve major number
-MODULE_ID=$(cat /proc/devices | grep "$DEVICE_NAME" | cut -d' ' -f1)
+echo "Loading module ${MODULE_NAME} at ${MODULE_PATH}"
+# invoke insmod and specify the path to module .ko file.
+/sbin/insmod "${MODULE_PATH}" || exit 1
+echo "Use lsmod to see modules loaded:\n  $(lsmod | grep ${MODULE_NAME})"
+
+# Retrieve module id
+MODULE_ID=$(cat /proc/devices | grep "${MODULE_NAME}" | cut -d' ' -f1)
 echo "Create node with ID ${MODULE_ID}"
-mknod /dev/${DEVICE_NAME} c ${MODULE_ID} 0
-chmod 666 /dev/${DEVICE_NAME}
+mknod /dev/${MODULE_NAME} c ${MODULE_ID} 0
+chmod 666 /dev/${MODULE_NAME}
