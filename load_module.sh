@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/sh -x
 # Load module script. Will remove the old one if it exists
 
 MODULE_NAME=ioctl
@@ -16,7 +16,6 @@ if [ ! -z $1 ]; then
 fi
 
 
-set -e
 MODULE_INFO="$(modinfo ${MODULE_PATH})"
 MODULE_ABSOLUTE_PATH="$(echo ${MODULE_INFO} | awk '/filename/{print $2}')"
 
