@@ -1,4 +1,4 @@
-#!/bin/sh -x
+#!/bin/sh
 # Load module script. Will remove the old one if it exists
 
 MODULE_NAME=ioctl
@@ -32,9 +32,9 @@ echo "Create node with ID ${MODULE_ID}"
 mknod /dev/${MODULE_NAME} c ${MODULE_ID} 0
 chmod 666 /dev/${MODULE_NAME}
 
-DIR="/sys/module/${MODULE_NAME}/sections/"
-TEXT_ADDR=$(cat "$DIR/.text")
-BSS_ADDR=$(cat "$DIR/.bss")
-DATA_ADDR=$(cat "$DIR/.data")
+MODULE_SECTION_PATH="/sys/module/${MODULE_NAME}/sections/"
+TEXT_ADDR=$(cat "$MODULE_SECTION_PATH/.text")
+BSS_ADDR=$(cat "$MODULE_SECTION_PATH/.bss")
+DATA_ADDR=$(cat "$MODULE_SECTION_PATH/.data")
 echo "Use this command in host gdb for debug:"
 echo "  add-symbol-file $MODULE_ABSOLUTE_PATH $TEXT_ADDR -s .bss $BSS_ADDR -s .data $DATA_ADDR"
