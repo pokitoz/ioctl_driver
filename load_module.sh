@@ -14,6 +14,9 @@ if [ ! -z $1 ]; then
 fi
 
 echo "Loading module ${MODULE_NAME} at ${MODULE_PATH}"
+# Module can load only against the kernel it was compiled for
+modinfo -F vermagic ${MODULE_PATH}
+
 # invoke insmod and specify the path to module .ko file.
 /sbin/insmod "${MODULE_PATH}" || exit 1
 echo "Use lsmod to see modules loaded:\n  $(lsmod | grep ${MODULE_NAME})"

@@ -33,7 +33,11 @@ struct file_operations ioctl_d_fops = {
   .release = NULL
 };
 
-static void ioctl_d_interface_exit(void)
+/**
+ * @brief ioctl_d_interface_exit
+ * @note __exit is an hint used to free memory if module is built as a driver
+ */
+static void __exit ioctl_d_interface_exit(void)
 {
   cdev_del(&ioctl_d_interface.cdev);
   unregister_chrdev_region(
@@ -43,7 +47,12 @@ static void ioctl_d_interface_exit(void)
   pr_info("ioctl_d_interface: module unloaded\n");
 }
 
-static int ioctl_d_interface_init(void)
+/**
+ * @brief ioctl_d_interface_init
+ * @return 0 on success, negative on failure
+ * @note __init is used to free memory of the function after module is loaded
+ */
+static int __init ioctl_d_interface_init(void)
 {
   dev_t devno = 0;
   int result = 0;
@@ -91,8 +100,7 @@ int ioctl_d_interface_open(struct inode* inode, struct file* filp)
   return 0;
 }
 
-long ioctl_d_interface_ioctl(struct file* filp,
-    unsigned int cmd, unsigned long arg)
+long ioctl_d_interface_ioctl(struct file* filp, unsigned int cmd, unsigned long arg)
 {
   pr_info("<%s>: %u\n", module_name(THIS_MODULE), cmd);
 
