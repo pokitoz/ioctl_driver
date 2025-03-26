@@ -41,4 +41,21 @@ Use `make`, it will build the .ko module, the application and load the module.
 
 ## Debug
 
-Look for printk output in: `/dev/kmsg` or `dmesg`
+Look for printk output in: `/dev/kmsg` or `dmesg`.
+Look for `printk_ratelimit` to limit the rate of a specific printk if it occurs too much
+See `cat /proc/sys/kernel/printk` to know the current, default, min, boot values for debug
+Note that printk can be used everywhere (even in interrupt) but care about having functions that have unexpected time to execute.
+
+`strace` can be used to trace the interactions between user and kernel space.
+Use `strace ./app/ioctl_app` for example
+
+Use dynamic debug `pr_debug` and enables them using:
+```
+echo 8 > /proc/sys/kernel/printk
+echo 'file ioctl.c +p' > /sys/kernel/debug/dynamic_debug/control
+```
+
+
+
+
+
